@@ -23,9 +23,9 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
     // Create the triangle struct object
     tri : triangle
 
-    tri.vertices_tri = make([dynamic]f32, 0, 18)
+    tri.vertices_quad = make([dynamic]f32, 0, 18)
 
-    defer delete(tri.vertices_tri)
+    defer delete(tri.vertices_quad)
 
     fillVertices(&tri)
     tri.program_fixedtri = ShaderLoader.CreateProgramFromShader("Resources/Shaders/FixedTriangle.vert", 
@@ -35,11 +35,16 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
     OpenGL.GenVertexArrays(1, &tri.vao)
     OpenGL.BindVertexArray(tri.vao)
 
+     // Generate the EBO for a Quad
+    OpenGL.GenBuffers(1, &tri.ebo)
+    OpenGL.BindBuffer(OpenGL.ELEMENT_ARRAY_BUFFER, tri.ebo)
+    OpenGL.BufferData(OpenGL.ELEMENT_ARRAY_BUFFER, len(tri.indices_quad) * size_of(u32), raw_data(tri.indices_quad), OpenGL.STATIC_DRAW)
+
     // Generate the VBO for a Triangle
     OpenGL.GenBuffers(1, &tri.vbo)
     OpenGL.BindBuffer(OpenGL.ARRAY_BUFFER, tri.vbo)
-    OpenGL.BufferData(OpenGL.ARRAY_BUFFER, len(tri.vertices_tri) * size_of(f32), raw_data(tri.vertices_tri), OpenGL.STATIC_DRAW)
-
+    OpenGL.BufferData(OpenGL.ARRAY_BUFFER, len(tri.vertices_quad) * size_of(f32), raw_data(tri.vertices_quad), OpenGL.STATIC_DRAW)
+   
     // Set the Vertex Attribute information (how to interpret the vertex data)
     OpenGL.VertexAttribPointer(0, 3, OpenGL.FLOAT, false, i32(6 * size_of(f32)), uintptr(0))
     OpenGL.EnableVertexAttribArray(0)
@@ -66,7 +71,7 @@ render :: proc(_window: glfw.WindowHandle, _triangle: triangle)
     CurrentTimeLoc := OpenGL.GetUniformLocation(_triangle.program_fixedtri, "CurrentTime")
     OpenGL.Uniform1f(CurrentTimeLoc, CurrentTime)
 
-    OpenGL.DrawArrays(OpenGL.TRIANGLES, 0, 6)
+    OpenGL.DrawElements(OpenGL.TRIANGLES, 6, OpenGL.UNSIGNED_INT, rawptr(uintptr(0)))
     OpenGL.BindVertexArray(0)
     OpenGL.UseProgram(0)
 
