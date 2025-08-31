@@ -20,38 +20,47 @@ InitRenderer :: proc()
 
 runRenderLoop :: proc(_window: glfw.WindowHandle)
 {
-    program_fixedtri = ShaderLoader.CreateProgramFromShader("Resources/Shaders/FixedTriangle.vert", 
+    // Create the triangle struct object
+    tri : triangle
+
+    tri.vertices_tri = make([dynamic]f32, 0, 18)
+    
+    defer delete(tri.vertices_tri)
+
+    fillVertices(&tri)
+    tri.program_fixedtri = ShaderLoader.CreateProgramFromShader("Resources/Shaders/FixedTriangle.vert", 
                                                             "Resources/Shaders/FixedColor.frag")
 
-
     // Generate the VAO for a Triangle
-    OpenGL.GenVertexArrays(1, &vao)
-    OpenGL.BindVertexArray(vao)
+    OpenGL.GenVertexArrays(1, &tri.vao)
+    OpenGL.BindVertexArray(tri.vao)
 
     // Generate the VBO for a Triangle
-    OpenGL.GenBuffers(1, &vbo)
-    OpenGL.BindBuffer(OpenGL.ARRAY_BUFFER, vbo)
-    OpenGL.BufferData(OpenGL.ARRAY_BUFFER, size_of(vertices_tri), raw_data(&vertices_tri), OpenGL.STATIC_DRAW)
+    OpenGL.GenBuffers(1, &tri.vbo)
+    OpenGL.BindBuffer(OpenGL.ARRAY_BUFFER, tri.vbo)
+    OpenGL.BufferData(OpenGL.ARRAY_BUFFER, len(tri.vertices_tri) * size_of(f32), raw_data(tri.vertices_tri), OpenGL.STATIC_DRAW)
 
     // Set the Vertex Attribute information (how to interpret the vertex data)
-    OpenGL.VertexAttribPointer(0,  3, OpenGL.FLOAT, false, 3 * size_of(f32), 0)
+    OpenGL.VertexAttribPointer(0, 3, OpenGL.FLOAT, false, i32(6 * size_of(f32)), uintptr(0))
     OpenGL.EnableVertexAttribArray(0)
+    OpenGL.VertexAttribPointer(1, 3, OpenGL.FLOAT, false, i32(6 * size_of(f32)), uintptr(3 * size_of(f32)))
+    OpenGL.EnableVertexAttribArray(1)
 
     for !glfw.WindowShouldClose(_window)
     {
         update()
-        render(_window, program_fixedtri)
+        render(_window, tri)
     }
     glfw.DestroyWindow(_window)
     glfw.Terminate()
 }
 
-render :: proc(_window: glfw.WindowHandle, _program: u32)
+render :: proc(_window: glfw.WindowHandle, _triangle: triangle)
 {
     OpenGL.Clear(OpenGL.COLOR_BUFFER_BIT)
 
-    OpenGL.UseProgram(_program)
-    OpenGL.BindVertexArray(vao)
+    OpenGL.UseProgram(_triangle.program_fixedtri)
+    OpenGL.BindVertexArray(_triangle.vao)
     OpenGL.DrawArrays(OpenGL.TRIANGLES, 0, 3)
     OpenGL.BindVertexArray(0)
     OpenGL.UseProgram(0)
