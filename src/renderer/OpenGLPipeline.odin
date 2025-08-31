@@ -24,7 +24,7 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
     tri : triangle
 
     tri.vertices_tri = make([dynamic]f32, 0, 18)
-    
+
     defer delete(tri.vertices_tri)
 
     fillVertices(&tri)
@@ -61,7 +61,12 @@ render :: proc(_window: glfw.WindowHandle, _triangle: triangle)
 
     OpenGL.UseProgram(_triangle.program_fixedtri)
     OpenGL.BindVertexArray(_triangle.vao)
-    OpenGL.DrawArrays(OpenGL.TRIANGLES, 0, 3)
+
+    // Send variables to the shaders via Uniform
+    CurrentTimeLoc := OpenGL.GetUniformLocation(_triangle.program_fixedtri, "CurrentTime")
+    OpenGL.Uniform1f(CurrentTimeLoc, CurrentTime)
+
+    OpenGL.DrawArrays(OpenGL.TRIANGLES, 0, 6)
     OpenGL.BindVertexArray(0)
     OpenGL.UseProgram(0)
 
@@ -71,4 +76,6 @@ render :: proc(_window: glfw.WindowHandle, _triangle: triangle)
 update :: proc()
 {
     glfw.PollEvents()
+
+    CurrentTime = f32(glfw.GetTime())
 }
