@@ -30,10 +30,13 @@ CreateProgramFromShader :: proc(_vertexShaderPath: string, _fragmentShaderPath: 
 
     if linkResult == 0 // false, link failed
     {
+        // Array of two strings
         failedProgramShaderStrings := [?]string {_vertexShaderPath, _fragmentShaderPath}
 
+        // Create a string, its a concatenation of two other strings (this assigns memory to heap)
         failedProgramName := strings.concatenate(failedProgramShaderStrings[:])
-        defer delete(failedProgramName) // deferes the freeing up of the string memory until after scope exit.
+        // Defer freeing up that memory until the end of the scope block (after we've used it and its no longer needed)
+        defer delete(failedProgramName) 
 
         printErrorDetails(false, program, failedProgramName)
         return 0
