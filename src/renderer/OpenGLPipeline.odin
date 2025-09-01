@@ -3,6 +3,7 @@ package renderer
 import "vendor:glfw" 
 import "vendor:OpenGL"
 import "ShaderLoader"
+import "core:fmt"
 import lm "core:math/linalg/glsl"
 
 InitRenderer :: proc()
@@ -10,11 +11,11 @@ InitRenderer :: proc()
     glfw.Init()
     glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
-    window := glfw.CreateWindow(1920, 1080, "OpenGL Window", nil, nil)
+    window := glfw.CreateWindow(1000, 1000, "OpenGL Window", nil, nil)
     glfw.MakeContextCurrent(window)
     OpenGL.load_up_to(4,6,glfw.gl_set_proc_address) // This is a replacement for GLEW, odin has it built in.
     OpenGL.ClearColor(0,0,0,1) // Sets it to blackz
-    OpenGL.Viewport(0,0, 1920, 1080) // Sets the viewport (#TODO these numbers need to be variables so they're changable in the future.)
+    OpenGL.Viewport(0,0, 1000, 1000) // Sets the viewport (#TODO these numbers need to be variables so they're changable in the future.)
     
     runRenderLoop(window)
 }
@@ -28,10 +29,10 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
 
     defer delete(renderObj.vertices_quad)
 
-    renderObj.quadPosition = lm.vec3{0.5, 0.5, 0.0}
-    renderObj.translationMat = lm.mat4(0)
-
+    
+    
     fillVertices(&renderObj)
+
     renderObj.program = ShaderLoader.CreateProgramFromShader("Resources/Shaders/WorldSpace.vert", 
                                                             "Resources/Shaders/FixedColor.frag")
 
@@ -71,12 +72,13 @@ render :: proc(_window: glfw.WindowHandle, _renderObj: ^quad)
     OpenGL.UseProgram(_renderObj.program)
     OpenGL.BindVertexArray(_renderObj.vao)
 
-    // Send variables to the shaders via Uniform
+    //  --------------- Send variables to the shaders via Uniform ---------------
     CurrentTimeLoc := OpenGL.GetUniformLocation(_renderObj.program, "CurrentTime")
     OpenGL.Uniform1f(CurrentTimeLoc, CurrentTime)
 
-    location := OpenGL.GetUniformLocation(_renderObj.program, "TranslationMat")
-    OpenGL.UniformMatrix4fv(location, 1, false, raw_data(&_renderObj.translationMat))
+    modelMatLoc := OpenGL.GetUniformLocation(_renderObj.program, "ModelMat")
+    OpenGL.UniformMatrix4fv(modelMatLoc, 1, false, raw_data(&_renderObj.modelMat))
+    //  --------------- Send variables to the shaders via Uniform ---------------
 
     OpenGL.DrawElements(OpenGL.TRIANGLES, 6, OpenGL.UNSIGNED_INT, rawptr(uintptr(0)))
     OpenGL.BindVertexArray(0)
@@ -91,5 +93,20 @@ update :: proc(_renderObj: ^quad)
 
     CurrentTime = f32(glfw.GetTime())
 
+    // Translation matrix assignments.
+    _renderObj.quadPosition = lm.vec3{-0.5, -0.5, 0.0}
+    _renderObj.translationMat = lm.mat4(0)
     _renderObj.translationMat = lm.mat4Translate(_renderObj.quadPosition)
+
+    // Rotation matrix assignments.
+    _renderObj.vec3Rotation = {0.0, 0.0, 1.0}
+    _renderObj.rotationDegrees = 20 * CurrentTime
+    fmt.printf("", _renderObj.rotationDegrees)
+    _renderObj.rotationMat = lm.mat4Rotate(_renderObj.vec3Rotation, lm.radians(_renderObj.rotationDegrees))
+    
+    // Scale matrix assignments.
+    vec3Scale : lm.vec3 = {0.5, 0.5, 1.0}
+    _renderObj.scaleMat = lm.mat4Scale(vec3Scale)
+
+    _renderObj.modelMat = _renderObj.translationMat * _renderObj.rotationMat * _renderObj.scaleMat
 }
