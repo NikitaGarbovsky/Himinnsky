@@ -22,19 +22,17 @@ InitRenderer :: proc()
 
 runRenderLoop :: proc(_window: glfw.WindowHandle)
 {
-    // Create the triangle struct object
-    renderObj : quad
+    // Create the render struct object
+    renderObj : renderObject
 
     renderObj.vertices_quad = make([dynamic]f32, 0, 18)
 
     defer delete(renderObj.vertices_quad)
 
-    
-    
     fillVertices(&renderObj)
 
-    renderObj.program = ShaderLoader.CreateProgramFromShader("Resources/Shaders/WorldSpace.vert", 
-                                                            "Resources/Shaders/FixedColor.frag")
+    renderObj.program = ShaderLoader.CreateProgramFromShader("Resources/Shaders/Texture.vert", 
+                                                            "Resources/Shaders/Texture.frag")
 
     // Generate the VAO for a Triangle
     OpenGL.GenVertexArrays(1, &renderObj.vao)
@@ -50,11 +48,36 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
     OpenGL.BindBuffer(OpenGL.ARRAY_BUFFER, renderObj.vbo)
     OpenGL.BufferData(OpenGL.ARRAY_BUFFER, len(renderObj.vertices_quad) * size_of(f32), raw_data(renderObj.vertices_quad), OpenGL.STATIC_DRAW)
    
+    // Create and bind a new texture variable
+    setImageFlip()
+    loadImageTexture() // <-- Loads image data
+    OpenGL.GenTextures(1, &textureGlass)
+    OpenGL.BindTexture(OpenGL.TEXTURE_2D, textureGlass)
+
+    // Check how many components the loaded image has (RGBA or RGB?)
+    loadedComponents : i32 
+    if imageComponents == 4 {loadedComponents = OpenGL.RGBA} else {loadedComponents = OpenGL.RGB}
+
+    // Populate the texture with the image data
+    OpenGL.TexImage2D(OpenGL.TEXTURE_2D, 0, loadedComponents, imageWidth, imageHeight, 0, 
+        u32(loadedComponents), OpenGL.UNSIGNED_BYTE, imageData)
+
+    // Setting the filtering and mipmap parameters for this texture 
+    OpenGL.TexParameteri(OpenGL.TEXTURE_2D, OpenGL.TEXTURE_MIN_FILTER, OpenGL.LINEAR_MIPMAP_LINEAR)
+    OpenGL.TexParameteri(OpenGL.TEXTURE_2D, OpenGL.TEXTURE_MAG_FILTER, OpenGL.LINEAR)
+
+    // Generate the mipmaps, free the memory and unbind the texture
+    OpenGL.GenerateMipmap(OpenGL.TEXTURE_2D)
+    freeImageTextureData()
+    OpenGL.BindTexture(OpenGL.TEXTURE_2D, 0)
+
     // Set the Vertex Attribute information (how to interpret the vertex data)
-    OpenGL.VertexAttribPointer(0, 3, OpenGL.FLOAT, false, i32(6 * size_of(f32)), uintptr(0))
+    OpenGL.VertexAttribPointer(0, 3, OpenGL.FLOAT, false, i32(8 * size_of(f32)), uintptr(0))
     OpenGL.EnableVertexAttribArray(0)
-    OpenGL.VertexAttribPointer(1, 3, OpenGL.FLOAT, false, i32(6 * size_of(f32)), uintptr(3 * size_of(f32)))
+    OpenGL.VertexAttribPointer(1, 3, OpenGL.FLOAT, false, i32(8 * size_of(f32)), uintptr(3 * size_of(f32)))
     OpenGL.EnableVertexAttribArray(1)
+    OpenGL.VertexAttribPointer(2, 2, OpenGL.FLOAT, false, i32(8 * size_of(f32)), uintptr(6 * size_of(f32)))
+    OpenGL.EnableVertexAttribArray(2)
 
     for !glfw.WindowShouldClose(_window)
     {
@@ -65,7 +88,7 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
     glfw.Terminate()
 }
 
-render :: proc(_window: glfw.WindowHandle, _renderObj: ^quad)
+render :: proc(_window: glfw.WindowHandle, _renderObj: ^renderObject)
 {
     OpenGL.Clear(OpenGL.COLOR_BUFFER_BIT)
 
@@ -73,11 +96,15 @@ render :: proc(_window: glfw.WindowHandle, _renderObj: ^quad)
     OpenGL.BindVertexArray(_renderObj.vao)
 
     //  --------------- Send variables to the shaders via Uniform ---------------
-    CurrentTimeLoc := OpenGL.GetUniformLocation(_renderObj.program, "CurrentTime")
-    OpenGL.Uniform1f(CurrentTimeLoc, CurrentTime)
+    // CurrentTimeLoc := OpenGL.GetUniformLocation(_renderObj.program, "CurrentTime")
+    // OpenGL.Uniform1f(CurrentTimeLoc, CurrentTime)
 
     modelMatLoc := OpenGL.GetUniformLocation(_renderObj.program, "ModelMat")
     OpenGL.UniformMatrix4fv(modelMatLoc, 1, false, raw_data(&_renderObj.modelMat))
+
+    OpenGL.ActiveTexture(OpenGL.TEXTURE0)
+    OpenGL.BindTexture(OpenGL.TEXTURE_2D, textureGlass)
+    OpenGL.Uniform1i(OpenGL.GetUniformLocation(_renderObj.program, "Texture0"), 0)
     //  --------------- Send variables to the shaders via Uniform ---------------
 
     OpenGL.DrawElements(OpenGL.TRIANGLES, 6, OpenGL.UNSIGNED_INT, rawptr(uintptr(0)))
@@ -87,7 +114,7 @@ render :: proc(_window: glfw.WindowHandle, _renderObj: ^quad)
     glfw.SwapBuffers(_window)
 }
 
-update :: proc(_renderObj: ^quad)
+update :: proc(_renderObj: ^renderObject)
 {
     glfw.PollEvents()
 
@@ -101,7 +128,6 @@ update :: proc(_renderObj: ^quad)
     // Rotation matrix assignments.
     _renderObj.vec3Rotation = {0.0, 0.0, 1.0}
     _renderObj.rotationDegrees = 20 * CurrentTime
-    fmt.printf("", _renderObj.rotationDegrees)
     _renderObj.rotationMat = lm.mat4Rotate(_renderObj.vec3Rotation, lm.radians(_renderObj.rotationDegrees))
     
     // Scale matrix assignments.
