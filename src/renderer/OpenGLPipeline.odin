@@ -11,11 +11,11 @@ InitRenderer :: proc()
     glfw.Init()
     glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
-    window := glfw.CreateWindow(1000, 1000, "OpenGL Window", nil, nil)
+    window := glfw.CreateWindow(windowWidth, WindowHeight, "OpenGL Window", nil, nil)
     glfw.MakeContextCurrent(window)
     OpenGL.load_up_to(4,6,glfw.gl_set_proc_address) // This is a replacement for GLEW, odin has it built in.
     OpenGL.ClearColor(0,0,0,1) // Sets it to blackz
-    OpenGL.Viewport(0,0, 1000, 1000) // Sets the viewport (#TODO these numbers need to be variables so they're changable in the future.)
+    OpenGL.Viewport(0,0, windowWidth, WindowHeight) // Sets the viewport
     
     runRenderLoop(window)
 }
@@ -31,7 +31,7 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
 
     fillVertices(&renderObj)
 
-    renderObj.program = ShaderLoader.CreateProgramFromShader("Resources/Shaders/Texture.vert", 
+    renderObj.program = ShaderLoader.CreateProgramFromShader("Resources/Shaders/ClipSpace.vert", 
                                                             "Resources/Shaders/Texture.frag")
 
     // Generate the VAO for a Triangle
@@ -101,6 +101,10 @@ render :: proc(_window: glfw.WindowHandle, _renderObj: ^renderObject)
 
     modelMatLoc := OpenGL.GetUniformLocation(_renderObj.program, "ModelMat")
     OpenGL.UniformMatrix4fv(modelMatLoc, 1, false, raw_data(&_renderObj.modelMat))
+    viewMat := OpenGL.GetUniformLocation(_renderObj.program, "ViewMat")
+    OpenGL.UniformMatrix4fv(viewMat, 1, false, raw_data(&ViewMat))
+    projectionMat := OpenGL.GetUniformLocation(_renderObj.program, "ProjectionMat")
+    OpenGL.UniformMatrix4fv(projectionMat, 1, false, raw_data(&ProjectionMat))
 
     OpenGL.ActiveTexture(OpenGL.TEXTURE0)
     OpenGL.BindTexture(OpenGL.TEXTURE_2D, textureGlass)
@@ -121,7 +125,7 @@ update :: proc(_renderObj: ^renderObject)
     CurrentTime = f32(glfw.GetTime())
 
     // Translation matrix assignments.
-    _renderObj.quadPosition = lm.vec3{-0.5, -0.5, 0.0}
+    _renderObj.quadPosition = lm.vec3{0, 0, -1.0}
     _renderObj.translationMat = lm.mat4(0)
     _renderObj.translationMat = lm.mat4Translate(_renderObj.quadPosition)
 
@@ -131,7 +135,7 @@ update :: proc(_renderObj: ^renderObject)
     _renderObj.rotationMat = lm.mat4Rotate(_renderObj.vec3Rotation, lm.radians(_renderObj.rotationDegrees))
     
     // Scale matrix assignments.
-    vec3Scale : lm.vec3 = {0.5, 0.5, 1.0}
+    vec3Scale : lm.vec3 = {1.0, 1.0, 1.0}
     _renderObj.scaleMat = lm.mat4Scale(vec3Scale)
 
     _renderObj.modelMat = _renderObj.translationMat * _renderObj.rotationMat * _renderObj.scaleMat
