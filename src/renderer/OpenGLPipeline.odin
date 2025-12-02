@@ -1,7 +1,7 @@
 package renderer
 
 import "vendor:glfw" 
-import "vendor:OpenGL"
+import gl "vendor:OpenGL"
 import "ShaderLoader"
 import "core:fmt"
 import lm "core:math/linalg/glsl"
@@ -11,11 +11,11 @@ InitRenderer :: proc()
     glfw.Init()
     glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
-    window := glfw.CreateWindow(windowWidth, WindowHeight, "OpenGL Window", nil, nil)
+    window := glfw.CreateWindow(windowWidth, WindowHeight, "Himinnsky Renderer", nil, nil)
     glfw.MakeContextCurrent(window)
-    OpenGL.load_up_to(4,6,glfw.gl_set_proc_address) // This is a replacement for GLEW, odin has it built in.
-    OpenGL.ClearColor(0,0,0,1) // Sets it to blackz
-    OpenGL.Viewport(0,0, windowWidth, WindowHeight) // Sets the viewport
+    gl.load_up_to(4,6,glfw.gl_set_proc_address) // This is a replacement for GLEW, odin has it built in.
+    gl.ClearColor(0,0,0,1) // Sets it to blackz
+    gl.Viewport(0,0, windowWidth, WindowHeight) // Sets the viewport
     
     runRenderLoop(window)
 }
@@ -51,55 +51,55 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
     for RO, i in renderObjs
     {
         // Generate the VAO for a Rendered Obj
-        OpenGL.GenVertexArrays(1, &renderObjs[i].vao)
-        OpenGL.BindVertexArray(renderObjs[i].vao)
+        gl.GenVertexArrays(1, &renderObjs[i].vao)
+        gl.BindVertexArray(renderObjs[i].vao)
 
         // Generate the EBO for a Rendered Obj
-        OpenGL.GenBuffers(1, &renderObjs[i].ebo)
-        OpenGL.BindBuffer(OpenGL.ELEMENT_ARRAY_BUFFER, renderObjs[i].ebo)
-        OpenGL.BufferData(OpenGL.ELEMENT_ARRAY_BUFFER, len(renderObjs[i].objIndices) * size_of(u32), raw_data(renderObjs[i].objIndices), OpenGL.STATIC_DRAW)
+        gl.GenBuffers(1, &renderObjs[i].ebo)
+        gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, renderObjs[i].ebo)
+        gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(renderObjs[i].objIndices) * size_of(u32), raw_data(renderObjs[i].objIndices), gl.STATIC_DRAW)
 
         // Generate the VBO for a Rendered Obj
-        OpenGL.GenBuffers(1, &renderObjs[i].vbo)
-        OpenGL.BindBuffer(OpenGL.ARRAY_BUFFER, renderObjs[i].vbo)
-        OpenGL.BufferData(OpenGL.ARRAY_BUFFER, len(renderObjs[i].objVertices) * size_of(f32), raw_data(renderObjs[i].objVertices), OpenGL.STATIC_DRAW)
+        gl.GenBuffers(1, &renderObjs[i].vbo)
+        gl.BindBuffer(gl.ARRAY_BUFFER, renderObjs[i].vbo)
+        gl.BufferData(gl.ARRAY_BUFFER, len(renderObjs[i].objVertices) * size_of(f32), raw_data(renderObjs[i].objVertices), gl.STATIC_DRAW)
     
         // Create and bind a new texture variable
         setImageFlip()
         loadImageTexture() // <-- Loads image data
-        OpenGL.GenTextures(1, &textureGlass)
-        OpenGL.BindTexture(OpenGL.TEXTURE_2D, textureGlass)
+        gl.GenTextures(1, &textureGlass)
+        gl.BindTexture(gl.TEXTURE_2D, textureGlass)
 
         // Check how many components the loaded image has (RGBA or RGB?)
         loadedComponents : i32 
-        if imageComponents == 4 {loadedComponents = OpenGL.RGBA} else {loadedComponents = OpenGL.RGB}
+        if imageComponents == 4 {loadedComponents = gl.RGBA} else {loadedComponents = gl.RGB}
 
         // Populate the texture with the image data
-        OpenGL.TexImage2D(OpenGL.TEXTURE_2D, 0, loadedComponents, imageWidth, imageHeight, 0, 
-            u32(loadedComponents), OpenGL.UNSIGNED_BYTE, imageData)
+        gl.TexImage2D(gl.TEXTURE_2D, 0, loadedComponents, imageWidth, imageHeight, 0, 
+            u32(loadedComponents), gl.UNSIGNED_BYTE, imageData)
 
         // Setting the filtering and mipmap parameters for this texture 
-        OpenGL.TexParameteri(OpenGL.TEXTURE_2D, OpenGL.TEXTURE_MIN_FILTER, OpenGL.LINEAR_MIPMAP_LINEAR)
-        OpenGL.TexParameteri(OpenGL.TEXTURE_2D, OpenGL.TEXTURE_MAG_FILTER, OpenGL.LINEAR)
+        gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+        gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
         // Generate the mipmaps, free the memory and unbind the texture
-        OpenGL.GenerateMipmap(OpenGL.TEXTURE_2D)
+        gl.GenerateMipmap(gl.TEXTURE_2D)
         freeImageTextureData()
-        OpenGL.BindTexture(OpenGL.TEXTURE_2D, 0)
+        gl.BindTexture(gl.TEXTURE_2D, 0)
 
         // Set the Vertex Attribute information (how to interpret the vertex data)
-        OpenGL.VertexAttribPointer(0, 3, OpenGL.FLOAT, false, i32(5 * size_of(f32)), uintptr(0))
-        OpenGL.EnableVertexAttribArray(0)
-        OpenGL.VertexAttribPointer(1, 2, OpenGL.FLOAT, false, i32(5 * size_of(f32)), uintptr(3 * size_of(f32)))
-        OpenGL.EnableVertexAttribArray(1)
+        gl.VertexAttribPointer(0, 3, gl.FLOAT, false, i32(5 * size_of(f32)), uintptr(0))
+        gl.EnableVertexAttribArray(0)
+        gl.VertexAttribPointer(1, 2, gl.FLOAT, false, i32(5 * size_of(f32)), uintptr(3 * size_of(f32)))
+        gl.EnableVertexAttribArray(1)
 
-        OpenGL.Enable(OpenGL.DEPTH_TEST)
-        OpenGL.DepthFunc(OpenGL.LESS)
-        OpenGL.Enable(OpenGL.CULL_FACE)
-        OpenGL.CullFace(OpenGL.BACK)
-        OpenGL.FrontFace(OpenGL.CCW)
+        gl.Enable(gl.DEPTH_TEST)
+        gl.DepthFunc(gl.LESS)
+        gl.Enable(gl.CULL_FACE)
+        gl.CullFace(gl.BACK)
+        gl.FrontFace(gl.CCW)
 
-        //OpenGL.PolygonMode(OpenGL.FRONT_AND_BACK, OpenGL.LINE)
+        //gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
     }
 
     for !glfw.WindowShouldClose(_window)
@@ -114,37 +114,37 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
 
 render :: proc(_window: glfw.WindowHandle, _renderObjs: ^[5]renderObject)
 {
-    OpenGL.Clear(OpenGL.COLOR_BUFFER_BIT | OpenGL.DEPTH_BUFFER_BIT)
+    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-    OpenGL.UseProgram(RenderObjProgram)
+    gl.UseProgram(RenderObjProgram)
 
-    modelMatLoc := OpenGL.GetUniformLocation(RenderObjProgram, "ModelMat")
-    viewMat := OpenGL.GetUniformLocation(RenderObjProgram, "ViewMat")
-    OpenGL.UniformMatrix4fv(viewMat, 1, false, raw_data(&ViewMat))
+    modelMatLoc := gl.GetUniformLocation(RenderObjProgram, "ModelMat")
+    viewMat := gl.GetUniformLocation(RenderObjProgram, "ViewMat")
+    gl.UniformMatrix4fv(viewMat, 1, false, raw_data(&ViewMat))
 
-    projectionMat := OpenGL.GetUniformLocation(RenderObjProgram, "ProjectionMat")
-    OpenGL.UniformMatrix4fv(projectionMat, 1, false, raw_data(&ProjectionMat))
+    projectionMat := gl.GetUniformLocation(RenderObjProgram, "ProjectionMat")
+    gl.UniformMatrix4fv(projectionMat, 1, false, raw_data(&ProjectionMat))
 
     for RO, i in _renderObjs
     {
-        OpenGL.BindVertexArray(_renderObjs[i].vao)
+        gl.BindVertexArray(_renderObjs[i].vao)
     
         //  --------------- Send variables to the shaders via Uniform ---------------
-        // CurrentTimeLoc := OpenGL.GetUniformLocation(_renderObj.program, "CurrentTime")
-        // OpenGL.Uniform1f(CurrentTimeLoc, CurrentTime)
+        // CurrentTimeLoc := gl.GetUniformLocation(_renderObj.program, "CurrentTime")
+        // gl.Uniform1f(CurrentTimeLoc, CurrentTime)
 
-        OpenGL.UniformMatrix4fv(modelMatLoc, 1, false, raw_data(&_renderObjs[i].modelMat))
+        gl.UniformMatrix4fv(modelMatLoc, 1, false, raw_data(&_renderObjs[i].modelMat))
                 
-        OpenGL.ActiveTexture(OpenGL.TEXTURE0)
-        OpenGL.BindTexture(OpenGL.TEXTURE_2D, textureGlass)
-        OpenGL.Uniform1i(OpenGL.GetUniformLocation(RenderObjProgram, "Texture0"), 0)
+        gl.ActiveTexture(gl.TEXTURE0)
+        gl.BindTexture(gl.TEXTURE_2D, textureGlass)
+        gl.Uniform1i(gl.GetUniformLocation(RenderObjProgram, "Texture0"), 0)
         //  --------------- Send variables to the shaders via Uniform ---------------
 
-        OpenGL.DrawElements(OpenGL.TRIANGLES, i32(len(_renderObjs[i].objIndices)), OpenGL.UNSIGNED_INT, rawptr(uintptr(0)))
+        gl.DrawElements(gl.TRIANGLES, i32(len(_renderObjs[i].objIndices)), gl.UNSIGNED_INT, rawptr(uintptr(0)))
     }
     
-    OpenGL.BindVertexArray(0)
-    OpenGL.UseProgram(0)
+    gl.BindVertexArray(0)
+    gl.UseProgram(0)
 
     glfw.SwapBuffers(_window)
 }
