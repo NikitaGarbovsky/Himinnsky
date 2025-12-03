@@ -6,21 +6,24 @@ import "ShaderLoader"
 import "core:fmt"
 import lm "core:math/linalg/glsl"
 
-InitRenderer :: proc()
+initRenderer :: proc()
 {
     glfw.Init()
     glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
-    window := glfw.CreateWindow(windowWidth, WindowHeight, "Himinnsky Renderer", nil, nil)
+    // Create window and assign to global
+    window = glfw.CreateWindow(windowWidth, WindowHeight, "Himinnsky Renderer", nil, nil)
     glfw.MakeContextCurrent(window)
     gl.load_up_to(4,6,glfw.gl_set_proc_address) // This is a replacement for GLEW, odin has it built in.
     gl.ClearColor(0,0,0,1) // Sets it to blackz
     gl.Viewport(0,0, windowWidth, WindowHeight) // Sets the viewport
     
-    runRenderLoop(window)
+    glfw.SetKeyCallback(window, keyInput)
+    setCameraProjection(cameraType.Free)
+    runRenderLoop()
 }
 
-runRenderLoop :: proc(_window: glfw.WindowHandle)
+runRenderLoop :: proc()
 {
     // Create the render object array
     renderObjs : [5]renderObject
@@ -102,17 +105,17 @@ runRenderLoop :: proc(_window: glfw.WindowHandle)
         //gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
     }
 
-    for !glfw.WindowShouldClose(_window)
+    for !glfw.WindowShouldClose(window)
     {
         update(&renderObjs)
-        render(_window, &renderObjs)
+        render(&renderObjs)
     }
 
-    glfw.DestroyWindow(_window)
+    glfw.DestroyWindow(window)
     glfw.Terminate()
 }
 
-render :: proc(_window: glfw.WindowHandle, _renderObjs: ^[5]renderObject)
+render :: proc(_renderObjs: ^[5]renderObject)
 {
     gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -146,14 +149,16 @@ render :: proc(_window: glfw.WindowHandle, _renderObjs: ^[5]renderObject)
     gl.BindVertexArray(0)
     gl.UseProgram(0)
 
-    glfw.SwapBuffers(_window)
+    glfw.SwapBuffers(window)
 }
 
 update :: proc(_renderObjs: ^[5]renderObject)
 {
-    glfw.PollEvents()
-
     CurrentTime = f32(glfw.GetTime())
+    deltaTime = CurrentTime - lastFrameTime
+    lastFrameTime = CurrentTime
+
+    glfw.PollEvents()
 
     // TODO move this // Assigns the world positions of each rendered Object
     _renderObjs[0].objPosition = lm.vec3{250, 250, -1000.0}
@@ -171,7 +176,7 @@ update :: proc(_renderObjs: ^[5]renderObject)
 
         // Rotation matrix assignments.
         _renderObjs[i].vec3Rotation = {1.0, 1.0, 1.0}
-        _renderObjs[i].rotationDegrees = 20 * CurrentTime
+        _renderObjs[i].rotationDegrees += 20 * deltaTime
         _renderObjs[i].rotationMat = lm.mat4Rotate(_renderObjs[i].vec3Rotation, lm.radians(_renderObjs[i].rotationDegrees))
         
         // Scale matrix assignments.
@@ -180,4 +185,6 @@ update :: proc(_renderObjs: ^[5]renderObject)
 
         _renderObjs[i].modelMat = _renderObjs[i].translationMat * _renderObjs[i].rotationMat * _renderObjs[i].scaleMat
     }
+
+    updateCamera()
 }

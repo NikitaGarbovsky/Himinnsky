@@ -6,7 +6,10 @@ import "vendor:OpenGL"
 // Imports glsl math types (vec3, mat4 etc)
 import lm "core:math/linalg/glsl" // Only have to use lm to call math procedures from core library.
 
-CurrentTime : f32
+CurrentTime : f32 = 0.0
+lastFrameTime: f32 = 0.0
+deltaTime : f32 = 0.0
+
 RenderObjProgram : u32
 
 renderObject :: struct 

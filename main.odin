@@ -4,5 +4,5 @@ import "src/renderer"
 
 main :: proc()
 {
-    renderer.InitRenderer()
+    renderer.initRenderer()
 }
