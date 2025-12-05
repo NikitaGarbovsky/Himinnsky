@@ -1,16 +1,16 @@
 #version 460 core
 
-// Inputs
-in vec3 FragColor;
 in vec2 FragTexCoords;
 
-// Uniform Inputs
-uniform sampler2D Texture0;
+out vec4 FragColor;
 
-// Ouput
-out vec4 FinalColor;
+uniform sampler2D Texture0;
 
 void main()
 {
-    FinalColor = texture(Texture0, FragTexCoords);
+    vec4 texColor = texture(Texture0, FragTexCoords);
+
+    if (texColor.a < 0.5) discard;
+
+    FragColor = vec4(texColor.rgb, texColor.a);
 }
