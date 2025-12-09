@@ -104,14 +104,12 @@ render :: proc()
     projectionMat := gl.GetUniformLocation(RenderObjProgram, "ProjectionMat")
     gl.UniformMatrix4fv(projectionMat, 1, false, raw_data(&ProjectionMat))
 
-    // Simple rotating model matrix 
-    angle := f32(glfw.GetTime()) * 30.0
-    modelMat := lm.mat4Rotate({0,1,0}, lm.radians(angle)) *
-                lm.mat4Scale({1, 1, 1}) 
+    modelMat := lm.mat4Scale({1, 1, 1}) // Only set scale of it now
 
     modelMatLoc := gl.GetUniformLocation(RenderObjProgram, "ModelMat")
-    gl.UniformMatrix4fv(modelMatLoc, 1, false, &modelMat[0][0])
+    gl.UniformMatrix4fv(modelMatLoc, 1, false, &modelMat[0,0])
 
+    // Renderes all render objects that are currently stored.
     for &renderedObject, i in currentlyRenderedObjects
     {
         gl.BindVertexArray(renderedObject.vao)
@@ -120,7 +118,7 @@ render :: proc()
         tex_id := len(renderedObject.textures) > i ? renderedObject.textures[i] : renderedObject.textures[0]
         gl.ActiveTexture(gl.TEXTURE0)
         gl.BindTexture(gl.TEXTURE_2D, tex_id)
-        gl.Uniform1i(gl.GetUniformLocation(RenderObjProgram, "Texture0"), 0)
+        //gl.Uniform1i(gl.GetUniformLocation(RenderObjProgram, "Texture1"), 0)
 
         gl.DrawElements(gl.TRIANGLES, i32(len(renderedObject.objIndices)), gl.UNSIGNED_INT, nil)
     }
@@ -149,6 +147,15 @@ render :: proc()
             yaw_rad := cameraYaw * (math.PI / 180.0)
             imgui.DragFloat("Yaw", &yaw_rad, -180, 180) // #TODO This is not working correctly
             imgui.SliderAngle("Pitch", &cameraPitch, -89, 89) // #TODO This is not working correctly
+        }
+        for &RO, i in currentlyRenderedObjects
+        {
+            if imgui.CollapsingHeader("RenderObject")
+            {
+                imgui.DragFloat("X", &RO.objPosition[0])
+                imgui.DragFloat("Y", &RO.objPosition[1])
+                imgui.DragFloat("Z", &RO.objPosition[2])
+            }
         }
     }
     imgui.End()
