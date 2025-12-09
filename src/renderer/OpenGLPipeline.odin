@@ -8,6 +8,10 @@ import "core:fmt"
 import lm "core:math/linalg/glsl"
 import "core:mem"
 import "core:slice"
+import "core:math"
+import imgui               "Dependencies:odin-imgui"
+import imgui_impl_glfw     "Dependencies:odin-imgui/imgui_impl_glfw"
+import imgui_impl_opengl3  "Dependencies:odin-imgui/imgui_impl_opengl3"
 
 initRenderer :: proc()
 {
@@ -46,6 +50,17 @@ initRenderer :: proc()
     append(&currentlyRenderedObjects, axe)
 
     free_all(context.temp_allocator)
+
+    // ------------ IMGUI INIT ------------
+    imgui.CreateContext()
+    io := imgui.GetIO()
+
+    imgui_impl_glfw.InitForOpenGL(window, true)
+    imgui_impl_opengl3.Init("#version 460") 
+
+    imgui.StyleColorsDark()
+    // ------------------------------------
+
     runRenderLoop()
 }
 
@@ -53,6 +68,9 @@ runRenderLoop :: proc()
 {
     gl.Enable(gl.DEPTH_TEST)
     gl.DepthFunc(gl.LESS)
+
+    // This is here just so we can go straight into free cam mode upon starting.
+    glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_DISABLED) 
 
     if len(currentlyRenderedObjects) <= 0 {
         fmt.eprintln("No models loaded!")
@@ -79,7 +97,6 @@ render :: proc()
     gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
     gl.UseProgram(RenderObjProgram)
-
     
     viewMat := gl.GetUniformLocation(RenderObjProgram, "ViewMat")
     gl.UniformMatrix4fv(viewMat, 1, false, raw_data(&ViewMat))
@@ -90,7 +107,7 @@ render :: proc()
     // Simple rotating model matrix 
     angle := f32(glfw.GetTime()) * 30.0
     modelMat := lm.mat4Rotate({0,1,0}, lm.radians(angle)) *
-                lm.mat4Scale({10, 10, 10}) 
+                lm.mat4Scale({1, 1, 1}) 
 
     modelMatLoc := gl.GetUniformLocation(RenderObjProgram, "ModelMat")
     gl.UniformMatrix4fv(modelMatLoc, 1, false, &modelMat[0][0])
@@ -111,6 +128,39 @@ render :: proc()
     gl.BindVertexArray(0)
     gl.UseProgram(0)
 
+    //  RENDER IMGUI 
+    imgui_impl_opengl3.NewFrame()
+    imgui_impl_glfw.NewFrame()
+    imgui.NewFrame()
+
+    // Test window — delete later
+    if imgui.Begin("Himinnsky Debug") {
+        imgui.Text("FPS: %.1f", 1.0 / deltaTime)
+        imgui.Separator()
+        if imgui.Button("Toggle Wireframe") {
+            wireframe_enabled = !wireframe_enabled
+            gl.PolygonMode(gl.FRONT_AND_BACK, wireframe_enabled ? gl.LINE : gl.FILL)
+        }
+        if imgui.CollapsingHeader("Camera") {
+            imgui.DragFloat("X", &CameraPos[0])
+            imgui.DragFloat("Y", &CameraPos[1])
+            imgui.DragFloat("Z", &CameraPos[2])
+
+            yaw_rad := cameraYaw * (math.PI / 180.0)
+            imgui.DragFloat("Yaw", &yaw_rad, -180, 180) // #TODO This is not working correctly
+            imgui.SliderAngle("Pitch", &cameraPitch, -89, 89) // #TODO This is not working correctly
+        }
+    }
+    imgui.End()
+
+    // Show the official demo window 
+    // show_demo := true
+    // imgui.ShowDemoWindow(&show_demo)
+
+    imgui.Render()
+    imgui_impl_opengl3.RenderDrawData(imgui.GetDrawData())
+    // 
+    
     glfw.SwapBuffers(window)
 }
 

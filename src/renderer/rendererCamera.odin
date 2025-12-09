@@ -3,6 +3,7 @@ package renderer
 import lm "core:math/linalg/glsl"
 import "vendor:glfw"
 import "core:math"
+import "core:fmt"
 
 cameraType :: enum{Free, Ortho} // The Enum Type
 CurrentCameraType := cameraType.Free // The current camera type set.
@@ -25,6 +26,11 @@ fastMovementModifier : f32 = 5
 rightDirection := lm.vec3{0,0,0}
 cameraYaw : f32
 cameraPitch : f32
+
+// Set when entering edit mode (records the prior offsets so its easy to set them back once we return to freecam mode)
+priorOffsetX : f32 
+priorOffsetY : f32
+
 offsetX : f32
 offsetY : f32
 mousePosX : f32
@@ -36,12 +42,8 @@ updateCamera :: proc()
 	case .Free:
 		{
 			updateFreeMovement()
+
 			ViewMat = lm.mat4LookAt(CameraPos,  CameraPos + CameraLookDir, CameraUpDir)
-			glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_DISABLED)
-			if glfw.RawMouseMotionSupported()
-			{
-				glfw.SetInputMode(window, glfw.RAW_MOUSE_MOTION, 1) // raw is better for first person cam
-			}
 		}
 	case .Ortho:
 		{
@@ -68,19 +70,28 @@ setCameraProjection :: proc(_cameraType : cameraType)
 
 updateFreeMovement :: proc()
 {
-	updateMouseData()
+	if CurrentEditorMode == .FreeCam
+	{updateMouseData()}
 
 	// Apply sensitivity to mouse movement
 	mouseSensitivity := 30.0 * deltaTime
 	offsetX *= mouseSensitivity
 	offsetY *= mouseSensitivity
 
-	// Apply offset to yaw and pitch
-	cameraYaw += offsetX
-	cameraPitch += offsetY
+	// Don't change the camera stuff for the first tick while transitioning,
+	// allows the previous offset to be assigned then used after coming out of edit mode.
+	// This is a bit messy, TODO try remove this unnessesary state later.
+	if (!transitioningToFreeCam) 
+	{
+		// Apply offset to yaw and pitch
+		cameraYaw += offsetX
+		cameraPitch += offsetY
+	}
+	
+	cameraYaw = math.mod(cameraYaw + 180.0, 360.0) - 180.0
 
 	// Prevent gimbal lock 
-	cameraPitch = lm.clamp_f32(cameraPitch, -85, 85)
+	cameraPitch = lm.clamp_f32(cameraPitch, -89.0, 89.0)
 
 	look := lm.vec3{}
 	look.x = math.cos(lm.radians(cameraYaw)) * math.cos(lm.radians(cameraPitch))
@@ -125,9 +136,14 @@ updateFreeMovement :: proc()
 	if moveInput != {}
 	{
 		speed := FreeMoveSpeed * deltaTime
+
 		// Update camera pos & add speed boost modifier if applicable  
 		CameraPos += lm.normalize(moveInput) * (fastMovement ? speed * fastMovementModifier : speed)
 	}
+
+	// Confirms a full update(tick) of this movement has occured before 
+	// changing any potential transition state.  
+	transitioningToFreeCam = false 
 }
 
 updateMouseData :: proc()
