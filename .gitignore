@@ -4,3 +4,4 @@
 /Build/*.pdb
 /libs/*.lib
 imgui.ini
+*.exe

@@ -26,7 +26,7 @@ renderObject :: struct
     textures: []u32, 
     objPosition : lm.vec3,
     translationMat : lm.mat4,
-    vec3Rotation : lm.vec3,
+    objRotation : lm.vec3,
     rotationDegrees : f32,
     rotationMat : lm.mat4,
     scaleMat : lm.mat4,

@@ -9,6 +9,7 @@ import lm "core:math/linalg/glsl"
 import "core:mem"
 import "core:slice"
 import "core:math"
+import "core:strings"
 import imgui               "Dependencies:odin-imgui"
 import imgui_impl_glfw     "Dependencies:odin-imgui/imgui_impl_glfw"
 import imgui_impl_opengl3  "Dependencies:odin-imgui/imgui_impl_opengl3"
@@ -92,6 +93,24 @@ runRenderLoop :: proc()
     glfw.Terminate()
 }
 
+update :: proc()
+{
+    // Update time values that are used throughout the application
+    TimeSinceAppStart = f32(glfw.GetTime())
+    deltaTime = TimeSinceAppStart - lastFrameTime
+    lastFrameTime = TimeSinceAppStart
+
+    // Update each render objects model matrix
+    for &renderedObject, i in currentlyRenderedObjects
+    {
+        renderedObject.modelMat = lm.mat4Translate(renderedObject.objPosition) * lm.mat4Scale({1, 1, 1})
+    }
+
+    glfw.PollEvents()
+
+    updateCamera()
+}
+
 render :: proc()
 {
     gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -104,14 +123,13 @@ render :: proc()
     projectionMat := gl.GetUniformLocation(RenderObjProgram, "ProjectionMat")
     gl.UniformMatrix4fv(projectionMat, 1, false, raw_data(&ProjectionMat))
 
-    modelMat := lm.mat4Scale({1, 1, 1}) // Only set scale of it now
-
-    modelMatLoc := gl.GetUniformLocation(RenderObjProgram, "ModelMat")
-    gl.UniformMatrix4fv(modelMatLoc, 1, false, &modelMat[0,0])
-
     // Renderes all render objects that are currently stored.
     for &renderedObject, i in currentlyRenderedObjects
     {
+        // Set the model matrix uniform location and pass in this render ojects model matrix
+        modelMatLoc := gl.GetUniformLocation(RenderObjProgram, "ModelMat")
+        gl.UniformMatrix4fv(modelMatLoc, 1, false, &renderedObject.modelMat[0,0])
+
         gl.BindVertexArray(renderedObject.vao)
 
         // Bind texture (use first one, #TODO match by material index later)
@@ -139,22 +157,28 @@ render :: proc()
             wireframe_enabled = !wireframe_enabled
             gl.PolygonMode(gl.FRONT_AND_BACK, wireframe_enabled ? gl.LINE : gl.FILL)
         }
-        if imgui.CollapsingHeader("Camera") {
-            imgui.DragFloat("X", &CameraPos[0])
-            imgui.DragFloat("Y", &CameraPos[1])
-            imgui.DragFloat("Z", &CameraPos[2])
+        if imgui.CollapsingHeader("Camera###Cam") {
+            imgui.DragFloat("X###camX", &CameraPos[0])
+            imgui.DragFloat("Y###camY", &CameraPos[1])
+            imgui.DragFloat("Z###camZ", &CameraPos[2])
 
             yaw_rad := cameraYaw * (math.PI / 180.0)
             imgui.DragFloat("Yaw", &yaw_rad, -180, 180) // #TODO This is not working correctly
             imgui.SliderAngle("Pitch", &cameraPitch, -89, 89) // #TODO This is not working correctly
         }
         for &RO, i in currentlyRenderedObjects
-        {
-            if imgui.CollapsingHeader("RenderObject")
-            {
-                imgui.DragFloat("X", &RO.objPosition[0])
-                imgui.DragFloat("Y", &RO.objPosition[1])
-                imgui.DragFloat("Z", &RO.objPosition[2])
+        {   
+            header := fmt.tprintf("RenderObject###%d", i) // Generate a unique id based off index
+            if imgui.CollapsingHeader(strings.clone_to_cstring(header))
+            { 
+                // Generate widget GUI's with Unique ID's (using index for ID)
+                x_label := fmt.tprintf("X###RenderObjectPositionX%d", i)
+                y_label := fmt.tprintf("Y###RenderObjectPositionY%d", i)
+                z_label := fmt.tprintf("Z###RenderObjectPositionZ%d", i)
+
+                imgui.DragFloat(strings.clone_to_cstring(x_label), &RO.objPosition[0])  
+                imgui.DragFloat(strings.clone_to_cstring(y_label), &RO.objPosition[1])
+                imgui.DragFloat(strings.clone_to_cstring(z_label), &RO.objPosition[2])
             }
         }
     }
@@ -169,16 +193,4 @@ render :: proc()
     // 
     
     glfw.SwapBuffers(window)
-}
-
-update :: proc()
-{
-    // Update time values that are used throughout the application
-    TimeSinceAppStart = f32(glfw.GetTime())
-    deltaTime = TimeSinceAppStart - lastFrameTime
-    lastFrameTime = TimeSinceAppStart
-
-    glfw.PollEvents()
-
-    updateCamera()
 }
