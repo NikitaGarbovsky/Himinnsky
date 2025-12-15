@@ -234,8 +234,8 @@ upload_mesh :: proc(m: ^Mesh)
     gl.EnableVertexAttribArray(1)
 
     // Normal attribute (location 2)
-    // gl.VertexAttribPointer(2, 3, gl.FLOAT, false, i32(stride), uintptr(5 * size_of(f32)))
-    // gl.EnableVertexAttribArray(2)
+    gl.VertexAttribPointer(2, 3, gl.FLOAT, false, i32(stride), uintptr(5 * size_of(f32)))
+    gl.EnableVertexAttribArray(2)
 
     gl.BindVertexArray(0)
 }

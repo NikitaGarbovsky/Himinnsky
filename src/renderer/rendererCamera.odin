@@ -4,7 +4,6 @@ import lm "core:math/linalg/glsl"
 import "vendor:glfw"
 import "core:math"
 import "core:fmt"
-
 cameraType :: enum{Free, Ortho} // The Enum Type
 CurrentCameraType := cameraType.Free // The current camera type set.
 
@@ -12,7 +11,7 @@ CameraPos := lm.vec3{0.0, 0.0, 300.0} // Starts 300 in Z (into the screen)
 CameraUpDir := lm.vec3{0.0, 1.0, 0.0} // Up on Y axis.
 
 // One or the other will be used.
-CameraLookDir := lm.vec3{-3.0, 0.0, 3.0}
+CameraLookDir := lm.vec3{0.0, 0.0, 0.0}
 CameraTargetPos := lm.vec3{0.0, 0.0, 0.0}
 
 ViewMat := lm.mat4LookAt(CameraPos, CameraTargetPos, CameraUpDir)
@@ -58,12 +57,12 @@ setCameraProjection :: proc(_cameraType : cameraType)
 	switch _cameraType {
 	case .Free:
 		{
-			ProjectionMat = lm.mat4Perspective(lm.radians_f32(45), f32(windowWidth) / f32(WindowHeight), 0.1, 10000)
+			ProjectionMat = lm.mat4Perspective(lm.radians_f32(45), f32(WindowWidth) / f32(WindowHeight), 0.1, 1000000)
 		}
 	case .Ortho:
 		{
-			ProjectionMat = lm.mat4Ortho3d(-(f32(windowWidth) * 0.5), 
-			(f32(windowWidth) * 0.5), -(f32(WindowHeight) * 0.5), (f32(WindowHeight) * 0.5), 0.1, 10000)
+			ProjectionMat = lm.mat4Ortho3d(-(f32(WindowWidth) * 0.5), 
+			(f32(WindowWidth) * 0.5), -(f32(WindowHeight) * 0.5), (f32(WindowHeight) * 0.5), 0.1, 10000)
 		}
 	}
 }
@@ -93,7 +92,9 @@ updateFreeMovement :: proc()
 	// Prevent gimbal lock 
 	cameraPitch = lm.clamp_f32(cameraPitch, -89.0, 89.0)
 
+	// Calculate directional camera look vector
 	look := lm.vec3{}
+	//fmt.println("Camera Yaw in Degrees:", cameraYaw)
 	look.x = math.cos(lm.radians(cameraYaw)) * math.cos(lm.radians(cameraPitch))
 	look.y = math.sin(lm.radians(cameraPitch))
 	look.z = math.sin(lm.radians(cameraYaw)) * math.cos(lm.radians(cameraPitch))

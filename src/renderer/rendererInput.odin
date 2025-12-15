@@ -1,7 +1,6 @@
 package renderer
 
 import "vendor:glfw" 
-import gl "vendor:OpenGL"
 import "base:runtime"
 import "core:fmt"
 
@@ -49,7 +48,7 @@ keyInput :: proc "c" (_window : glfw.WindowHandle, _key : i32, _scanCode : i32, 
             glfw.SetInputMode(window, glfw.RAW_MOUSE_MOTION, 0)
 
             width, height := glfw.GetFramebufferSize(window)
-            fmt.println(width,height)
+
             glfw.SetCursorPos(window, f64(width /2), f64(height / 2))
             CurrentEditorMode = .Edit
         }

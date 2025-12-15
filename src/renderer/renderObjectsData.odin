@@ -1,16 +1,9 @@
 package renderer
 
-import "vendor:glfw" 
-import "vendor:OpenGL"
-import "modelLoader"
-
 // Imports glsl math types (vec3, mat4 etc)
 import lm "core:math/linalg/glsl" // Only have to use lm to call math procedures from core library.
 
-TimeSinceAppStart : f32 = 0.0
-lastFrameTime: f32 = 0.0
-deltaTime : f32 = 0.0
-
+InfiniteGrid : u32
 RenderObjProgram : u32
 
 // A dynamic array holding all currently rendered objects 
