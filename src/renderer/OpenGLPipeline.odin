@@ -65,9 +65,9 @@ runRenderLoop :: proc()
 {
     gl.Enable(gl.DEPTH_TEST)
     gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-    gl.Enable(gl.DEPTH_TEST)
     gl.DepthFunc(gl.LEQUAL)
     gl.Disable(gl.CULL_FACE)
+    gl.Enable(gl.MULTISAMPLE)
 
     // gl.Enable(gl.DEBUG_OUTPUT);
     // gl.Enable(gl.DEBUG_OUTPUT_SYNCHRONOUS);
@@ -89,10 +89,16 @@ runRenderLoop :: proc()
         "Resources/Shaders/Texture.frag",
     )
 
-    InfiniteGrid = ShaderLoader.CreateProgramFromShader(
+    InfiniteGridProgram = ShaderLoader.CreateProgramFromShader(
         "Resources/Shaders/InfiniteGrid.vert",
         "Resources/Shaders/InfiniteGrid.frag",
         )
+
+    skyboxProgram = ShaderLoader.CreateProgramFromShader(
+        "Resources/Shaders/Skybox.vert", 
+        "Resources/Shaders/Skybox.frag")
+
+    initSkybox()
 
     for !glfw.WindowShouldClose(window)
     {
@@ -126,6 +132,8 @@ render :: proc()
 {
     gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+    renderSkybox()
+
     gl.UseProgram(RenderObjProgram)
     
     viewMatLoc := gl.GetUniformLocation(RenderObjProgram, "ViewMat")
@@ -147,12 +155,15 @@ render :: proc()
 
         gl.BindVertexArray(renderedObject.vao)
 
-        // Bind texture (use first one, #TODO match by material index later)
-        tex_id := len(renderedObject.textures) > i ? renderedObject.textures[i] : renderedObject.textures[0]
-        gl.ActiveTexture(gl.TEXTURE0)
-        gl.BindTexture(gl.TEXTURE_2D, tex_id)
-        //gl.Uniform1i(gl.GetUniformLocation(RenderObjProgram, "Texture1"), 0)
-
+        if(renderedObject.textures != nil) // Don't bind textures if there is no textures for this model
+        {
+            // Bind texture (use first one, #TODO match by material index later)
+            tex_id := len(renderedObject.textures) > i ? renderedObject.textures[i] : renderedObject.textures[0]
+            gl.ActiveTexture(gl.TEXTURE0)
+            gl.BindTexture(gl.TEXTURE_2D, tex_id)
+            //gl.Uniform1i(gl.GetUniformLocation(RenderObjProgram, "Texture1"), 0)
+        }
+        
         gl.DrawElements(gl.TRIANGLES, i32(len(renderedObject.objIndices)), gl.UNSIGNED_INT, nil)
     }
     
@@ -160,19 +171,19 @@ render :: proc()
     gl.UseProgram(0)
 
     view_proj := ProjectionMat * ViewMat 
-    view_proj_loc := gl.GetUniformLocation(InfiniteGrid, "view_proj")
-    grid_size_loc := gl.GetUniformLocation(InfiniteGrid, "grid_size")
+    view_proj_loc := gl.GetUniformLocation(InfiniteGridProgram, "view_proj")
+    grid_size_loc := gl.GetUniformLocation(InfiniteGridProgram, "grid_size")
 
     vao: u32
     gl.GenVertexArrays(1, &vao)
     gl.BindVertexArray(vao)  
     gl.BindVertexArray(0)
 
-    gl.UseProgram(InfiniteGrid)
+    gl.UseProgram(InfiniteGridProgram)
     
     // Upload uniforms
     gl.UniformMatrix4fv(view_proj_loc, 1, false, &view_proj[0][0])
-    gl.Uniform1f(grid_size_loc, 10000.0) // Size of grid.
+    gl.Uniform1f(grid_size_loc, 1000.0) // Size of grid.
 
     gl.BindVertexArray(vao)
     gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
@@ -219,7 +230,6 @@ render :: proc()
         imgui.End()
     }
     
-
     // Test window — delete later
     if imgui.Begin("Himinnsky Debug") {
         imgui.Text("FPS: %.1f", 1.0 / deltaTime)
@@ -258,11 +268,11 @@ render :: proc()
     if imgui.Begin("Asset Browser") {
     path := "Resources/Models"
     dir, open_err := os.open(path, os.O_RDONLY)
-    entries, err := os.read_dir(dir, 0)
-    defer os.file_info_slice_delete(entries)
+    entries, err := os.read_dir(dir, 0, context.allocator)
+    defer os.file_info_slice_delete(entries, context.allocator)
 
         for &entry in entries {
-            if entry.is_dir { continue }  // skip folders for now
+            if entry.type == .Directory { continue }  // skip folders for now
 
             name := entry.name
             full_path := fmt.tprintf("%s/%s", path, name)

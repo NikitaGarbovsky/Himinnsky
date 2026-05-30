@@ -78,10 +78,10 @@ createShader :: proc(_shaderType: int, _shaderFilePath: string) -> (u32)
 readShaderFile :: proc(_fileName : string) -> (string)
 {
     // 1. Open and read contents of entire file
-    shaderData, linkResult := os.read_entire_file_from_filename(_fileName)
+    shaderData, linkResult := os.read_entire_file_from_path(_fileName, context.allocator)
 
     // 2. Check if that didn't work
-    if !linkResult 
+    if linkResult != nil 
     {
         fmt.println("Cannot read shader file: %v", _fileName)
         return ""

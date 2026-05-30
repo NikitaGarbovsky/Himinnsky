@@ -1,4 +1,4 @@
-package _modelLoader
+package modelLoader
 
 import cgltf "vendor:cgltf"
 import "core:os"
@@ -122,7 +122,7 @@ load_gltf :: proc(_path : string) -> (_model: Model, ok: bool)
                 if t.texture != nil && t.texture.image_ != nil && t.texture.image_.uri != nil {
                     tex_uri := string(t.texture.image_.uri)
                     dir := filepath.dir(_path)
-                    full_path := filepath.join({dir, tex_uri})
+                    full_path, ok := filepath.join({dir, tex_uri}, context.allocator)
                     tex_id := load_texture(full_path)
                     runtime.append_elem(&_model.textures, tex_id)
                 }

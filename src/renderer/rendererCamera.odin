@@ -4,10 +4,11 @@ import lm "core:math/linalg/glsl"
 import "vendor:glfw"
 import "core:math"
 import "core:fmt"
+
 cameraType :: enum{Free, Ortho} // The Enum Type
 CurrentCameraType := cameraType.Free // The current camera type set.
 
-CameraPos := lm.vec3{0.0, 0.0, 300.0} // Starts 300 in Z (into the screen)
+CameraPos := lm.vec3{0.0, 300.0, 0.0} // Starts 300 in Z (into the screen)
 CameraUpDir := lm.vec3{0.0, 1.0, 0.0} // Up on Y axis.
 
 // One or the other will be used.

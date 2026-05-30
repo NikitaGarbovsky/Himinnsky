@@ -1,6 +1,6 @@
 package main
 
-import "src/renderer"
+import "renderer"
 
 
 main :: proc()

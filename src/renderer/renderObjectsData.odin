@@ -3,8 +3,9 @@ package renderer
 // Imports glsl math types (vec3, mat4 etc)
 import lm "core:math/linalg/glsl" // Only have to use lm to call math procedures from core library.
 
-InfiniteGrid : u32
+InfiniteGridProgram : u32 
 RenderObjProgram : u32
+SkyboxProgram : u32
 
 // A dynamic array holding all currently rendered objects 
 currentlyRenderedObjects : [dynamic]renderObject

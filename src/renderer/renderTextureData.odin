@@ -15,7 +15,7 @@ loadImageTexture :: proc()
     if imageData == nil // Image filled with no data
     {
         fmt.println("Texture failed to load at: %v", filePath)
-    }
+    } 
 }
 
 freeImageTextureData :: proc()
