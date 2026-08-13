@@ -85,12 +85,12 @@ initSkybox :: proc()
 
 	filepath := "Resources/Textures/Skybox/"
 
-	front := strings.concatenate({filepath, "raspberry_ft.jpg"})
-	back := strings.concatenate({filepath, "raspberry_bk.jpg"})
-	up := strings.concatenate({filepath, "raspberry_up.jpg"})
-	down := strings.concatenate({filepath, "raspberry_dn.jpg"})
-	right := strings.concatenate({filepath, "raspberry_rt.jpg"})
-	left := strings.concatenate({filepath, "raspberry_lf.jpg"})
+	front := strings.concatenate({filepath, "Front.png"})
+	back := strings.concatenate({filepath, "Back.png"})
+	up := strings.concatenate({filepath, "Top.png"})
+	down := strings.concatenate({filepath, "Bottom.png"})
+	right := strings.concatenate({filepath, "Right.png"})
+	left := strings.concatenate({filepath, "Left.png"})
 
 	defer delete(front)
 	defer delete(back)
@@ -100,12 +100,12 @@ initSkybox :: proc()
 	defer delete(left)
 
 	textureStrings : [6]string = {
-		front,
-		back,
-		up,
-		down,
 		right,
 		left,
+		up,
+		down,
+		front,
+		back,
 	}
 
 	createTextureCubeMap(textureStrings)
@@ -114,9 +114,9 @@ initSkybox :: proc()
 createTextureCubeMap :: proc(_filepath : [6]string) 
 {
 	textureId : u32
-
+	gl.Enable(gl.TEXTURE_CUBE_MAP_SEAMLESS)
 	gl.GenTextures(1, &textureId)
-	gl.BindTexture(gl.TEXTURE_CUBE_MAP, textureId)
+	gl.BindTexture(gl.TEXTURE_CUBE_MAP, textureId) // Bind 
 	
 	ImageWidth, ImageHeight, ImageComponents : i32
 
@@ -142,7 +142,7 @@ createTextureCubeMap :: proc(_filepath : [6]string)
 	gl.TextureParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
 	gl.GenerateMipmap(gl.TEXTURE_CUBE_MAP)
-	gl.BindTexture(gl.TEXTURE_CUBE_MAP, 0)
+	gl.BindTexture(gl.TEXTURE_CUBE_MAP, 0) // Unbind
 
 	TextureID_Skybox = textureId
 }
