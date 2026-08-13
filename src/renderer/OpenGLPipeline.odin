@@ -120,7 +120,11 @@ update :: proc()
     // Update each render objects model matrix
     for &renderedObject, i in currentlyRenderedObjects
     {
-        renderedObject.modelMat = lm.mat4Translate(renderedObject.objPosition) * lm.mat4Scale({1, 1, 1})
+        T := lm.mat4Translate(renderedObject.objPosition)
+        R := lm.mat4Rotate({0,1,0}, lm.radians(renderedObject.objRotation.y))
+        S := lm.mat4Scale(renderedObject.objScale)
+
+        renderedObject.modelMat = T * R * S * renderedObject.localMat
     }
 
     glfw.PollEvents()
@@ -170,6 +174,7 @@ render :: proc()
     gl.BindVertexArray(0)
     gl.UseProgram(0)
 
+    // Infinite Grid Program
     view_proj := ProjectionMat * ViewMat 
     view_proj_loc := gl.GetUniformLocation(InfiniteGridProgram, "view_proj")
     grid_size_loc := gl.GetUniformLocation(InfiniteGridProgram, "grid_size")
@@ -185,7 +190,7 @@ render :: proc()
     
     // Upload uniforms
     gl.UniformMatrix4fv(view_proj_loc, 1, false, &view_proj[0][0])
-    gl.Uniform1f(grid_size_loc, 1000.0) // Size of grid.
+    gl.Uniform1f(grid_size_loc, 10.0) // Size of grid.
 
     gl.BindVertexArray(vao)
     gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
@@ -332,6 +337,8 @@ spawn_model :: proc(_path: string) {
         objIndices = slice.clone(model.mesh[0].indices[:]),
         textures = slice.clone(model.textures[:]),
         objPosition = spawn_pos,
+        localMat = model.mesh[0].transform,
+        objScale = lm.vec3(1)
     }
 
     append(&currentlyRenderedObjects, new_obj)

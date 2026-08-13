@@ -9,6 +9,7 @@ import "core:path/filepath"
 import gl "vendor:OpenGL"
 import "core:image"
 import "core:image/png"
+import lm "core:math/linalg/glsl"
 
 Model :: struct { 
 	mesh: [dynamic]Mesh,
@@ -20,6 +21,7 @@ Mesh :: struct {
 	vertices: [dynamic]f32, 
 	indices: [dynamic]u32,
 	vao, vbo, ebo: u32,
+    transform: lm.mat4,
 }
 
 load_gltf :: proc(_path : string) -> (_model: Model, ok: bool)
@@ -48,14 +50,19 @@ load_gltf :: proc(_path : string) -> (_model: Model, ok: bool)
 
     fmt.println("Number of meshes: ", len(data.meshes))
 	// Extract meshes
-    for m in 0..<len(data.meshes) {
+    for n in 0..<len(data.nodes) {
+        node := &data.nodes[n]
 
-        mesh := &data.meshes[m]
+        if node.mesh == nil {continue}
 
-        for p in 0..<len(mesh.primitives) {
-            prim := &mesh.primitives[p]
+        xform_raw: [16]f32
+        cgltf.node_transform_world(node, &xform_raw[0])
+        xform := transmute(lm.mat4)xform_raw
+
+        for p in 0..<len(node.mesh.primitives) {
+            prim := &node.mesh.primitives[p]
             submesh: Mesh
-
+            submesh.transform = xform
             // ============ Vertices ============
 
             // Get vertex count from position accessor (mandatory)
@@ -130,7 +137,7 @@ load_gltf :: proc(_path : string) -> (_model: Model, ok: bool)
 
             upload_mesh(&submesh)
             runtime.append_elem(&_model.mesh, submesh)
-            fmt.println("mesh", m, "prim", p, "verts:", len(submesh.vertices)/8, "indices:", len(submesh.indices))
+            fmt.println("mesh", n, "prim", p, "verts:", len(submesh.vertices)/8, "indices:", len(submesh.indices))
 
         }
     }

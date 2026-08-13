@@ -59,9 +59,6 @@ initSkybox :: proc()
 	skyboxRenderObject.objVertices = slice.clone(vertices)
 	skyboxRenderObject.objIndices = slice.clone(cubemapIndices)
 	skyboxRenderObject.objPosition = lm.vec3{0,0,0}
-	skyboxRenderObject.translationMat = lm.mat4Translate(lm.vec3{0,0,0})
-	skyboxRenderObject.scaleMat = lm.mat4Scale(lm.vec3{1,1,1})
-	skyboxRenderObject.rotationMat    = lm.mat4(1.0)
 	skyboxRenderObject.modelMat = lm.mat4(1.0)
 
 	gl.GenVertexArrays(1, &skyboxRenderObject.vao)

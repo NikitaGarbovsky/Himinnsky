@@ -8,21 +8,19 @@ RenderObjProgram : u32
 SkyboxProgram : u32
 
 // A dynamic array holding all currently rendered objects 
-currentlyRenderedObjects : [dynamic]renderObject
+currentlyRenderedObjects : #soa[dynamic]renderObject
 
-renderObject :: struct 
-{
-    vbo : u32,
-    vao : u32,
-    ebo : u32,
+renderObject :: struct {
+    vbo, vao, ebo : u32,
     objVertices : []f32,
     objIndices : []u32,
     textures: []u32, 
-    objPosition : lm.vec3,
-    translationMat : lm.mat4,
+
+    localMat : lm.mat4, // from glTF, configured from model loading.
+
+    objPosition : lm.vec3, 
     objRotation : lm.vec3,
-    rotationDegrees : f32,
-    rotationMat : lm.mat4,
-    scaleMat : lm.mat4,
-    modelMat : lm.mat4,
+    objScale : lm.vec3,
+
+    modelMat : lm.mat4, // computed each fram
 }
