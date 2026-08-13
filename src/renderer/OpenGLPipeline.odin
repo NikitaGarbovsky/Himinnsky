@@ -179,6 +179,8 @@ render :: proc()
     gl.BindVertexArray(vao)  
     gl.BindVertexArray(0)
 
+    gl.Enable(gl.BLEND)
+    gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
     gl.UseProgram(InfiniteGridProgram)
     
     // Upload uniforms
