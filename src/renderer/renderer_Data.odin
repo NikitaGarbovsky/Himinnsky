@@ -1,11 +1,27 @@
 package renderer
 
-// Imports glsl math types (vec3, mat4 etc)
-import lm "core:math/linalg/glsl" // Only have to use lm to call math procedures from core library.
+import "vendor:glfw"
+import lm "core:math/linalg/glsl"
 
-InfiniteGridProgram : u32 
-RenderObjProgram : u32
-SkyboxProgram : u32
+// The main glfw window
+window : glfw.WindowHandle
+
+TimeSinceAppStart : f32 = 0.0
+lastFrameTime: f32 = 0.0
+deltaTime : f32 = 0.0
+
+EditorMode :: enum {
+	Edit,
+	FreeCam
+}
+
+CurrentEditorMode : EditorMode = .FreeCam
+
+transitioningToFreeCam : bool
+
+WindowWidth, WindowHeight : i32 = 1920, 1080
+
+wireframe_enabled : bool 
 
 // A dynamic array holding all currently rendered objects 
 currentlyRenderedObjects : #soa[dynamic]renderObject

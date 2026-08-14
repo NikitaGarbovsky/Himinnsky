@@ -16,8 +16,8 @@ import imgui_impl_glfw     "Dependencies:odin-imgui/imgui_impl_glfw"
 import imgui_impl_opengl3  "Dependencies:odin-imgui/imgui_impl_opengl3"
 
 // Codebase package imports
-import "ShaderLoader"
-import "modelLoader"
+import "../ShaderLoader"
+import "../modelLoader"
 
 initRenderer :: proc()
 {
