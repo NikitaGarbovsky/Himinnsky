@@ -120,6 +120,7 @@ update :: proc()
     // Update each render objects model matrix
     for &renderedObject, i in currentlyRenderedObjects
     {
+        renderedObject.objScale = lm.vec3(100)
         T := lm.mat4Translate(renderedObject.objPosition)
         R := lm.mat4Rotate({0,1,0}, lm.radians(renderedObject.objRotation.y))
         S := lm.mat4Scale(renderedObject.objScale)
@@ -190,7 +191,7 @@ render :: proc()
     
     // Upload uniforms
     gl.UniformMatrix4fv(view_proj_loc, 1, false, &view_proj[0][0])
-    gl.Uniform1f(grid_size_loc, 10.0) // Size of grid.
+    gl.Uniform1f(grid_size_loc, 10000.0) // Size of grid.
 
     gl.BindVertexArray(vao)
     gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
@@ -291,7 +292,7 @@ render :: proc()
             if imgui.BeginDragDropSource({}) {
                 fmt.println("Drag started for:", full_path)
                 // Payload = full path as cstring
-                payload := strings.clone_to_cstring(full_path, context.allocator)
+                payload := strings.clone_to_cstring(full_path, context.temp_allocator)
                 imgui.SetDragDropPayload("MODEL_PATH", rawptr(payload), uint(len(full_path) + 1))
                 imgui.Text("%s", name)
                 imgui.EndDragDropSource()
@@ -310,6 +311,9 @@ render :: proc()
     // 
     
     glfw.SwapBuffers(window)
+
+    // Clears the temp allocator at the end of the frame.
+    free_all(context.temp_allocator)
 }
 
 spawn_model :: proc(_path: string) {
@@ -342,5 +346,4 @@ spawn_model :: proc(_path: string) {
     }
 
     append(&currentlyRenderedObjects, new_obj)
-    free_all(context.temp_allocator)
 }   
